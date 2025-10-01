@@ -38,6 +38,7 @@
 //	CONTRIBUTORS
 //		CT: Christopher Teubert (christopher.a.teubert@nasa.gov)
 //		JW: Jason Watkins (jason.w.watkins@nasa.gov)
+#define _CRT_SECURE_NO_WARNINGS
 
 #include "xplaneConnect.h"
 

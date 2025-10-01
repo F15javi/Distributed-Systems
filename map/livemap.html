@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Leaflet Realtime with Custom Icons</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        #map {
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Realtime plugin -->
+    <script src="http://localhost:8000/custom_realtime.js"></script>
+
+    <script>
+        // 1. Initialize map
+        const map = L.map('map').setView([41.8902, 12.4924], 2); // Rome coordinates
+
+        // 2. Add basemap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // 3. Define custom icon function
+        function pointToLayer(feature, latlng) {
+            const iconUrl = feature.properties.icon_url || 'http://localhost:8000/plane.png';
+
+            const icon = L.icon({
+                iconUrl: iconUrl,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, -16]
+            });
+
+            return L.marker(latlng, { icon: icon }).bindPopup(`ID: ${feature.properties.id}`);
+
+        }
+
+        // 4. Load real-time data
+
+        const realtime = L.realtime('http://localhost:8000/20cities.geojson', {
+            interval: 5 * 1000, // 5 seconds
+            getFeatureId: function(feature) {
+                return feature.properties.id;
+            },
+            pointToLayer: pointToLayer
+        }).addTo(map);
+
+        // 5. Zoom to bounds when first data loads
+        //realtime.on('update', function() {
+        //    map.fitBounds(realtime.getBounds(), { maxZoom: 15 });
+        //});
+    </script>
+</body>
+</html>
