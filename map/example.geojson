@@ -1,0 +1,38 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "colosseum",
+        "name": "Colosseum"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [12.4922, 41.8902]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "vatican",
+        "name": "Vatican City"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [12.4534, 41.9029]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "pantheon",
+        "name": "Pantheon"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [12.4768, 41.8986]
+      }
+    }
+  ]
+}
