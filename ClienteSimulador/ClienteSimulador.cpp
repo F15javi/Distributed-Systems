@@ -5,6 +5,11 @@
 #include <iostream>
 #include <mosquitto.h>
 #include <cstring>
+#include <fstream>
+#include <string>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
 
 #include "../src/xplaneConnect.h"
 #ifdef WIN32
@@ -14,8 +19,9 @@
 
 #define ROWS 3
 #define COLUMNS 9
-int publisher();
 
+int publisher(std::string payload);
+int readSteamUserName();
 
 const char* client_id = "1234";
 const char* host = "test.mosquitto.org";
@@ -29,13 +35,17 @@ const char* xpIP = "127.0.0.1"; //IP Address of computer running X-Plane
 unsigned short xpPort = 49007;  //default port number XPC listens on
 unsigned short port = 49003;    //port number to which X-Plane is set to send UDP packets
 
+std::string steamUserName;
+
 int main()
 {
-    printf("XPlaneConnect Example: readDATA()\n\n");
+    printf("Start clientXplane\n\n");
 
     printf("Start mosquitto MQTT\n\n");
     mosquitto_lib_init();
-   
+
+    printf("Read Steam User\n\n");
+    readSteamUserName();
 
     while (1) {
 
@@ -57,19 +67,29 @@ int main()
         float lat = data[2][0];
         float lon = data[2][1];
         float hdg = data[0][2];
+        
+        json jsonPayload;
 
+        jsonPayload["aircraft"] = steamUserName;
+        jsonPayload["latitude"] = lat;
+        jsonPayload["longitud"] = lon;
+        jsonPayload["altitude"] = altitude;
+        jsonPayload["speed"] = speed;
+        jsonPayload["heading"] = hdg;
+
+        std::string mqttPayload = jsonPayload.dump();
+
+        publisher(mqttPayload);
         Sleep(10);        
-        publisher();
     }
     return 0;
 }
 
 
 
-int publisher() {
+int publisher(std::string payload) {
 
     
-
     // Init
     mosquitto_lib_init();
     mosquitto* mosq = mosquitto_new("simpleClient", false, nullptr);
@@ -77,9 +97,6 @@ int publisher() {
         std::cerr << "Could not create client\n";
         return 1;
     }
-
-    // Authentication
-    //mosquitto_username_pw_set(mosq, username, password);
 
     // TLS
     if (mosquitto_tls_insecure_set(mosq, true) != MOSQ_ERR_SUCCESS) {
@@ -96,9 +113,9 @@ int publisher() {
     std::cout << "Connected\n\n";
 
     // Publish one message (QoS 1, wait for delivery)
-    const char* topic = "prueba";
-    const char* payload = "Hola Hector!";
-    rc = mosquitto_publish(mosq, nullptr, topic, std::strlen(payload), payload, 1, false);
+    const char* topic = steamUserName.c_str();
+    const char* msg = payload.c_str();
+    rc = mosquitto_publish(mosq, nullptr, topic, std::strlen(msg), msg, 1, false);
     if (rc != MOSQ_ERR_SUCCESS) {
         std::cerr << "Publish failed: " << mosquitto_strerror(rc) << "\n";
     }
@@ -112,7 +129,7 @@ int publisher() {
 
     // Process network events briefly (needed for QoS>0 to complete handshake)
     for (int i = 0; i < 10; i++) {
-        mosquitto_loop(mosq, 1000, 1);  // run network loop for 100ms
+        mosquitto_loop(mosq, 100, 1);  // run network loop for 100ms
     }
 
     // Disconnect
@@ -123,4 +140,25 @@ int publisher() {
     
     return 0;
 
+}
+int readSteamUserName() {
+    std::ifstream inputFile("C:\\Program Files (x86)\\Steam\\config\\loginusers.vdf"); // Replace with your file name
+
+    if (!inputFile) {
+        std::cerr << "Error opening file!" << std::endl;
+        return 1;
+    }
+
+    std::string line;
+    std::string username;
+    while (std::getline(inputFile, line)) {
+        std::cout << line << std::endl; // Print each line to console
+        if (line.find("PersonaName") != std::string::npos) {
+            username = line.substr(18,line.size()-1);
+            username = username.erase(username.size() - 1);
+            steamUserName = username;
+        }
+    }
+    inputFile.close(); // Close the file
+    return 0;
 }
