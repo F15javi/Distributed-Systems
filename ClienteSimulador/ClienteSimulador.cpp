@@ -36,6 +36,11 @@ unsigned short xpPort = 49007;  //default port number XPC listens on
 unsigned short port = 49003;    //port number to which X-Plane is set to send UDP packets
 
 std::string steamUserName;
+int speed;
+int altitude;
+float lat;
+float lon;
+float hdg;
 
 int main()
 {
@@ -55,30 +60,40 @@ int main()
         // Read 2 rows of data
         
         float data[ROWS][COLUMNS]; //data[0] is dataset index number, data[1] to data[9] are the contents of the dataset
-        readDATA(sock, data, ROWS);
+        int error = readDATA(sock, data, ROWS);
+        if (error != -1) {
+            //printf("\nlat = %f, lon = %f, alt = %d, speed = %f", lat, lon, altitude, speed);
 
-        printf("\nVtas: %f,", data[0][2]);
-        printf("\n pitch = %f, roll = %f, heading = %f, alt = %f", data[1][1], data[1][2], data[1][3], data[2][3]);
+            speed = data[0][2];
+            altitude = (int)data[2][3];
+            lat = data[2][1];
+            lon = data[2][2];
+            hdg = data[1][3];
+        }
+        else {
+            printf("\nSimulator not running");
+            speed = 0;
+            altitude = 0;
+            lat = 37.2828;
+            lon = -5.92088;
+            hdg = 0;
+        }
+        
 
         closeUDP(sock);
         
-        int speed = (int)data[0][2];
-        int altitude = (int)data[2][3];
-        float lat = data[2][0];
-        float lon = data[2][1];
-        float hdg = data[0][2];
+      
         
         json jsonPayload;
 
         jsonPayload["aircraft"] = steamUserName;
-        jsonPayload["latitude"] = lat;
-        jsonPayload["longitud"] = lon;
         jsonPayload["altitude"] = altitude;
-        jsonPayload["speed"] = speed;
         jsonPayload["heading"] = hdg;
+        jsonPayload["latitude"] = lat;
+        jsonPayload["longitude"] = lon;
+        jsonPayload["speed"] = speed;
 
         std::string mqttPayload = jsonPayload.dump();
-
         publisher(mqttPayload);
         Sleep(10);        
     }
@@ -110,17 +125,22 @@ int publisher(std::string payload) {
         std::cerr << "Connect failed: " << mosquitto_strerror(rc) << "\n";
         return 1;
     }
-    std::cout << "Connected\n\n";
+    std::cout << "\nConnected";
 
     // Publish one message (QoS 1, wait for delivery)
-    const char* topic = steamUserName.c_str();
+    std::string topicStr = "flights/"+steamUserName;
+
+    const char* topic = topicStr.c_str();
+
+
     const char* msg = payload.c_str();
+    printf(msg);
     rc = mosquitto_publish(mosq, nullptr, topic, std::strlen(msg), msg, 1, false);
     if (rc != MOSQ_ERR_SUCCESS) {
         std::cerr << "Publish failed: " << mosquitto_strerror(rc) << "\n";
     }
     else {
-        std::cout << "Message published\n";
+        std::cout << "Message published\n\n";
     }
 
     mosquitto_log_callback_set(mosq, [](mosquitto*, void*, int level, const char* str) {

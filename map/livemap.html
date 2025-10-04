@@ -4,6 +4,10 @@
     <meta charset="utf-8" />
     <title>Leaflet Realtime with Custom Icons</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://rawcdn.githack.com/bbecquet/Leaflet.RotatedMarker/master/leaflet.rotatedMarker.js"></script>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -25,11 +29,47 @@
     <script>
         // 1. Initialize map
         const map = L.map('map').setView([41.8902, 12.4924], 2); // Rome coordinates
+        const socket = io('http://localhost:5000'); // <-- point to your server
+        const flights = {};
 
         // 2. Add basemap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
+
+        socket.on('mqtt_data', (data) => {
+        const { aircraft, altitude, heading, latitude, longitude, speed} = data;
+        //console.log(data);
+        console.log(latitude);
+        console.log(longitude);
+
+        if (!latitude || !longitude) return;
+        
+
+        if (!flights[aircraft]) {
+        // Create new marker for this flight
+        const icon = L.icon({
+            iconUrl: "http://localhost:8000/plane.png", // or any URL to your plane image
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+        });
+        const marker = L.marker([latitude, longitude], {
+            icon,
+            rotationAngle: heading || 0,
+            rotationOrigin: "center center"
+        }).addTo(map)
+          .bindPopup(`<b>${aircraft}</b>`);
+
+        flights[aircraft] = marker;
+
+        } else {
+        // Update existing marker
+        flights[aircraft].setLatLng([latitude, longitude]);
+        //if (heading !== undefined) {
+        //  flights[aircraft].setRotationAngle(heading);
+        //}
+      }
+    });
 
         // 3. Define custom icon function
         function pointToLayer(feature, latlng) {
