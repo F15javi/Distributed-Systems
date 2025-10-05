@@ -25,6 +25,9 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Leaflet Realtime plugin -->
     <script src="http://localhost:8000/custom_realtime.js"></script>
+    <!-- Leaflet Rotation plugin -->
+    <script src="https://rawcdn.githack.com/bbecquet/Leaflet.RotatedMarker/master/leaflet.rotatedMarker.js"></script>
+
 
     <script>
         // 1. Initialize map
@@ -67,6 +70,8 @@
         // Update existing marker
         flights[aircraft].setLatLng([latitude, longitude]);
         flights[aircraft].setPopupContent(`<b>${aircraft}</b></br>${speed}`);
+        flights[aircraft].setRotationAngle(heading);
+
         //if (heading !== undefined) {
         //  flights[aircraft].setRotationAngle(heading);
         //}
