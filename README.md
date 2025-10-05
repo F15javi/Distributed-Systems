@@ -4,6 +4,6 @@ python -m http.server 8000
 
 hello there
 
--Héctor: descargar el juego
--añadir información
--añadir orientación
+- Héctor: descargar el juego
+- añadir información
+- añadir orientación
