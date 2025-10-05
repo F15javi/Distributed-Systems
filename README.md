@@ -7,3 +7,4 @@ hello there
 - Héctor: descargar el juego
 - añadir información
 - añadir orientación
+- añadir trayecto
