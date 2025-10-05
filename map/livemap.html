@@ -42,6 +42,7 @@
         //console.log(data);
         console.log(latitude);
         console.log(longitude);
+        console.log(speed);
 
         if (!latitude || !longitude) return;
         
@@ -58,13 +59,14 @@
             rotationAngle: heading || 0,
             rotationOrigin: "center center"
         }).addTo(map)
-          .bindPopup(`<b>${aircraft}</b>`);
+          .bindPopup(`<b>${aircraft}</b></br>${speed}`);
 
         flights[aircraft] = marker;
 
         } else {
         // Update existing marker
         flights[aircraft].setLatLng([latitude, longitude]);
+        flights[aircraft].setPopupContent(`<b>${aircraft}</b></br>${speed}`);
         //if (heading !== undefined) {
         //  flights[aircraft].setRotationAngle(heading);
         //}
