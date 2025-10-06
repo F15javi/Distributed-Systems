@@ -21,6 +21,7 @@
 <body>
     <div id="map"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Leaflet Realtime plugin -->
@@ -30,6 +31,24 @@
 
 
     <script>
+
+        let countriesGeoJson;
+
+        fetch('countries.geo.json')
+            .then(res => res.json())
+            .then(data => countriesGeoJson = data);
+
+        function getCountryFromPoint(lat, lng) {
+            const point = turf.point([lng, lat]);
+
+            for (const feature of countriesGeoJson.features) {
+                if (turf.booleanPointInPolygon(point, feature)) {
+                    return feature.properties.ADMIN || feature.properties.name;
+                }
+            }
+            return 'Unknown';
+        }
+
 
         function getRandomColor() {
             const colors = ['red', 'blue', 'green', 'orange', 'purple', 'teal', 'magenta', 'gold', 'lime', 'cyan'];
@@ -74,6 +93,8 @@
         const trailColor = getRandomColor();
         const path = L.polyline(coords, { color: trailColor, weight: 2 }).addTo(map);
         flights[aircraft] = { marker, path, coords, lastTrailUpdate: Date.now() };
+        const country = getCountryFromPoint(latitude, longitude);
+        console.log(`Aircraft is in: ${country}`);
 
         } else {
         // Update existing marker

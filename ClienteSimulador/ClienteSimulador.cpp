@@ -7,7 +7,7 @@
 #include <cstring>
 #include <fstream>
 #include <string>
-#include <nlohmann/json.hpp>
+#include "../ClienteSimulador/header/json.hpp"
 using json = nlohmann::json;
 
 #include "../src/xplaneConnect.h"
