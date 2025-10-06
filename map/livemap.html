@@ -69,7 +69,7 @@
         } else {
         // Update existing marker
         flights[aircraft].setLatLng([latitude, longitude]);
-        flights[aircraft].setPopupContent(`<b>${aircraft}</b></br>${speed}`);
+        flights[aircraft].setPopupContent(`<b>${aircraft}</b></br>Speed:<i>${speed}</i> kt </br> Altitude: <i>${altitude}</i> ft`);
         flights[aircraft].setRotationAngle(heading);
 
         //if (heading !== undefined) {
@@ -95,13 +95,13 @@
 
         // 4. Load real-time data
 
-        const realtime = L.realtime('http://localhost:8000/20cities.geojson', {
-            interval: 5 * 1000, // 5 seconds
-            getFeatureId: function(feature) {
-                return feature.properties.id;
-            },
-            pointToLayer: pointToLayer
-        }).addTo(map);
+        //const realtime = L.realtime('http://localhost:8000/20cities.geojson', {
+        //    interval: 5 * 1000, // 5 seconds
+        //    getFeatureId: function(feature) {
+        //        return feature.properties.id;
+        //    },
+        //    pointToLayer: pointToLayer
+        //}).addTo(map);
 
         // 5. Zoom to bounds when first data loads
         //realtime.on('update', function() {
