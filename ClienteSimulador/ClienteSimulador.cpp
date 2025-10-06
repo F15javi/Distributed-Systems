@@ -35,7 +35,7 @@ unsigned short port = 49003;    //port number to which X-Plane is set to send UD
 
 std::string steamUserName;
 int speed;
-int vvi;
+float vvi;
 int altitude;
 float altitudeGND;
 float lat;
@@ -64,9 +64,9 @@ int main()
         
         if (error != -1) {
             //printf("\nlat = %f, lon = %f, alt = %d, speed = %f", lat, lon, altitude, speed);
-
+           
             speed = data[0][2];
-            vvi = data[2][3];
+            vvi = data[1][3];
             altitude = (int)data[3][3];
             altitudeGND = (int)data[3][4];
             lat = data[3][1];

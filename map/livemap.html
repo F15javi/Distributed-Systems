@@ -73,14 +73,27 @@
 
         if (!latitude || !longitude) return;
         
-
-        if (!flights[aircraft]) {
-        // Create new marker for this flight
         const icon = L.icon({
             iconUrl: "http://localhost:8000/plane.png", // or any URL to your plane image
             iconSize: [32, 32],
             iconAnchor: [16, 16],
         });
+
+        const iconclimb = L.icon({
+            iconUrl: "http://localhost:8000/planeclimb.png", // or any URL to your plane image
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+        });
+
+        const icondesc = L.icon({
+            iconUrl: "http://localhost:8000/planedesc.png", // or any URL to your plane image
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+        });
+
+        if (!flights[aircraft]) {
+        // Create new marker for this flight
+
         const marker = L.marker([latitude, longitude], {
             icon,
             rotationAngle: heading || 0,
@@ -119,6 +132,21 @@
             flight.path.setLatLngs(flight.coords);
             flight.lastTrailUpdate = now;
         }
+
+        console.log(`vvi is: ${vvi}`);
+        if(vvi>500)
+        {    
+            console.log(`entra`);
+            flight.marker.setIcon(iconclimb);
+        }
+        else if(vvi<-500)
+        {
+            flight.marker.setIcon(icondesc);
+        }
+        else
+        {
+            flight.marker.setIcon(icon);
+        }
         //if (heading !== undefined) {
         //  flights[aircraft].setRotationAngle(heading);
         //}
@@ -126,19 +154,19 @@
     });
 
         // 3. Define custom icon function
-        function pointToLayer(feature, latlng) {
-            const iconUrl = feature.properties.icon_url || 'http://localhost:8000/plane.png';
+        //function pointToLayer(feature, latlng) {
+        //    const iconUrl = feature.properties.icon_url || 'http://localhost:8000/plane.png';
 
-            const icon = L.icon({
-                iconUrl: iconUrl,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16],
-                popupAnchor: [0, -16]
-            });
+        //    const icon = L.icon({
+        //        iconUrl: iconUrl,
+        //        iconSize: [32, 32],
+        //        iconAnchor: [16, 16],
+        //        popupAnchor: [0, -16]
+        //    });
 
-            return L.marker(latlng, { icon: icon }).bindPopup(`ID: ${feature.properties.id}`);
+        //    return L.marker(latlng, { icon: icon }).bindPopup(`ID: ${feature.properties.id}`);
 
-        }
+        //}
 
         // 4. Load real-time data
 
