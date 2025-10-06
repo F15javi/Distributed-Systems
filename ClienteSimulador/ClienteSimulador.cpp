@@ -71,11 +71,6 @@ int main()
         }
         else {
             printf("\nSimulator not running");
-            speed = 0;
-            altitude = 0;
-            lat = 37.2828;
-            lon = -5.92088;
-            hdg = 0;
         }
         
 
