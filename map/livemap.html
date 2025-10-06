@@ -30,6 +30,11 @@
 
 
     <script>
+
+        function getRandomColor() {
+            const colors = ['red', 'blue', 'green', 'orange', 'purple', 'teal', 'magenta', 'gold', 'lime', 'cyan'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
         // 1. Initialize map
         const map = L.map('map').setView([41.8902, 12.4924], 2); // Rome coordinates
         const socket = io('http://localhost:5000'); // <-- point to your server
@@ -62,16 +67,37 @@
             rotationAngle: heading || 0,
             rotationOrigin: "center center"
         }).addTo(map)
-          .bindPopup(`<b>${aircraft}</b></br>${speed}`);
+          .bindPopup(`<b>${aircraft}</b></br>Speed:<i>${speed}</i> kt </br> Altitude: <i>${altitude}</i> ft`);
 
-        flights[aircraft] = marker;
+        //flights[aircraft] = marker;
+        const coords = [[latitude, longitude]];
+        const trailColor = getRandomColor();
+        const path = L.polyline(coords, { color: trailColor, weight: 2 }).addTo(map);
+        flights[aircraft] = { marker, path, coords, lastTrailUpdate: Date.now() };
 
         } else {
         // Update existing marker
-        flights[aircraft].setLatLng([latitude, longitude]);
-        flights[aircraft].setPopupContent(`<b>${aircraft}</b></br>Speed:<i>${speed}</i> kt </br> Altitude: <i>${altitude}</i> ft`);
-        flights[aircraft].setRotationAngle(heading);
 
+        //flights[aircraft].setLatLng([latitude, longitude]);
+        //flights[aircraft].setPopupContent(`<b>${aircraft}</b></br>Speed:<i>${speed}</i> kt </br> Altitude: <i>${altitude}</i> ft`);
+        //flights[aircraft].setRotationAngle(heading);
+
+        const flight = flights[aircraft];
+
+        flight.marker.setLatLng([latitude, longitude]);
+        flight.marker.setPopupContent(`<b>${aircraft}</b></br>Speed:<i>${speed}</i> kt </br> Altitude: <i>${altitude}</i> ft`);
+        flight.marker.setRotationAngle(heading);
+
+        // Add new position to trail
+
+        // Limit trail length to last 20 points
+
+        const now = Date.now();
+        if (!flight.lastTrailUpdate || now - flight.lastTrailUpdate >= 10000) {
+            flight.coords.push([latitude, longitude]);
+            flight.path.setLatLngs(flight.coords);
+            flight.lastTrailUpdate = now;
+        }
         //if (heading !== undefined) {
         //  flights[aircraft].setRotationAngle(heading);
         //}
