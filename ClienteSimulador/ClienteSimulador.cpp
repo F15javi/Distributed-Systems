@@ -16,7 +16,7 @@ using json = nlohmann::json;
 #define sleep(n) Sleep(n * 1000)
 #endif
 
-#define ROWS 3
+#define ROWS 4
 #define COLUMNS 9
 
 int publisher(std::string payload);
@@ -35,6 +35,7 @@ unsigned short port = 49003;    //port number to which X-Plane is set to send UD
 
 std::string steamUserName;
 int speed;
+int vvi;
 int altitude;
 float lat;
 float lon;
@@ -64,10 +65,11 @@ int main()
             //printf("\nlat = %f, lon = %f, alt = %d, speed = %f", lat, lon, altitude, speed);
 
             speed = data[0][2];
-            altitude = (int)data[2][3];
-            lat = data[2][1];
-            lon = data[2][2];
-            hdg = data[1][3];
+            vvi = data[2][3];
+            altitude = (int)data[3][3];
+            lat = data[3][1];
+            lon = data[3][2];
+            hdg = data[2][3];
         }
         else {
             printf("\nSimulator not running");
@@ -88,6 +90,8 @@ int main()
         jsonPayload["latitude"] = lat;
         jsonPayload["longitude"] = lon;
         jsonPayload["speed"] = speed;
+        jsonPayload["vvi"] = vvi;
+
 
         std::string mqttPayload = jsonPayload.dump();
         publisher(mqttPayload);
