@@ -91,6 +91,12 @@
             iconAnchor: [16, 16],
         });
 
+        const iconup = L.icon({
+            iconUrl: "http://localhost:8000/planeup.png", // or any URL to your plane image
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+        });
+
         if (!flights[aircraft]) {
         // Create new marker for this flight
 
@@ -133,15 +139,17 @@
             flight.lastTrailUpdate = now;
         }
 
-        console.log(`vvi is: ${vvi}`);
         if(vvi>500)
         {    
-            console.log(`entra`);
             flight.marker.setIcon(iconclimb);
         }
         else if(vvi<-500)
         {
             flight.marker.setIcon(icondesc);
+        }
+        else if(altitudeGND>10)
+        {
+            flight.marker.setIcon(iconup);
         }
         else
         {
