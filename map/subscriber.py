@@ -9,6 +9,28 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 MQTT_BROKER = "test.mosquitto.org"
 MQTT_PARENT_TOPIC = "flights/#"  # <-- wildcard for all subtopics
 
+def publish_message(topic, payload):
+    mqtt_client.publish(topic, json.dumps(payload))
+
+@socketio.on('warning')
+def handle_socket_mqtt(data):
+    try:
+        aircraftname = data.get('aircraftname')
+        message = data.get('message')
+
+        if aircraftname is None:
+            print("aircraftname is incorrect")
+        if message is None:
+            print("meesage is incorrect")
+
+        # Publish to MQTT
+        publish_message("flights/"+aircraftname+"/warnings", message)
+        print(aircraftname)
+        print(f"Published to MQTT: {"flights/"+aircraftname+"/warnings"} -> {message}")
+        
+    except Exception as e:
+        print("Error in handle_socket_mqtt:", e)
+
 # --- MQTT Callbacks ---
 def on_connect(client, userdata, flags, rc):
     print("Connected to MQTT broker")
@@ -22,7 +44,7 @@ def on_message(client, userdata, msg):
         #print(f"Message from {topic}: {data}")
 
         # Include topic/device info in the message sent to the frontend
-        print(f"Message from {topic}: {data}")
+        #print(f"Message from {topic}: {data}")
 
         socketio.emit('mqtt_data', data)
     except Exception as e:
@@ -42,3 +64,4 @@ def index():
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000)
+    #socketio.run(app, host='0.0.0.0', port=5001)

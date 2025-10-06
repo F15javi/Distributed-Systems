@@ -155,7 +155,7 @@ int main() {
         
         if (error != -1) {
             //printf("\nlat = %f, lon = %f, alt = %d, speed = %f", lat, lon, altitude, speed);
-
+           
             speed = data[0][2];
             vvi = data[1][3];
             altitude = (int)data[3][3];

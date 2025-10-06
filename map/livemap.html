@@ -49,6 +49,7 @@
             return 'Unknown';
         }
 
+        const countriesWithAirspaceLimitations = ["Ukraine","Syria","Yemen","Libya","Somalia","Ethiopia","Armenia","Azerbaijan","Afghanistan","Mali","Iraq","Sudan","South Sudan","Democratic Republic of the Congo","Israel","Palestine","Iran","Iraq"];
 
         function getRandomColor() {
             const colors = ['red', 'blue', 'green', 'orange', 'purple', 'teal', 'magenta', 'gold', 'lime', 'cyan'];
@@ -57,6 +58,7 @@
         // 1. Initialize map
         const map = L.map('map').setView([41.8902, 12.4924], 2); // Rome coordinates
         const socket = io('http://localhost:5000'); // <-- point to your server
+        //const socketout = io('http://localhost:5001');
         const flights = {};
 
         // 2. Add basemap
@@ -67,20 +69,39 @@
         socket.on('mqtt_data', (data) => {
         const { aircraft, altitude, altitudeGND, heading, latitude, longitude, speed, vvi} = data;
         //console.log(data);
-        console.log(latitude);
-        console.log(longitude);
-        console.log(speed);
+        //console.log(latitude);
+        //console.log(longitude);
+        //console.log(speed);
 
         if (!latitude || !longitude) return;
         
-
-        if (!flights[aircraft]) {
-        // Create new marker for this flight
         const icon = L.icon({
             iconUrl: "http://localhost:8000/plane.png", // or any URL to your plane image
             iconSize: [32, 32],
             iconAnchor: [16, 16],
         });
+
+        const iconclimb = L.icon({
+            iconUrl: "http://localhost:8000/planeclimb.png", // or any URL to your plane image
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+        });
+
+        const icondesc = L.icon({
+            iconUrl: "http://localhost:8000/planedesc.png", // or any URL to your plane image
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+        });
+
+        const iconup = L.icon({
+            iconUrl: "http://localhost:8000/planeup.png", // or any URL to your plane image
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+        });
+
+        if (!flights[aircraft]) {
+        // Create new marker for this flight
+
         const marker = L.marker([latitude, longitude], {
             icon,
             rotationAngle: heading || 0,
@@ -92,9 +113,17 @@
         const coords = [[latitude, longitude]];
         const trailColor = getRandomColor();
         const path = L.polyline(coords, { color: trailColor, weight: 2 }).addTo(map);
-        flights[aircraft] = { marker, path, coords, lastTrailUpdate: Date.now() };
+        flights[aircraft] = { marker, path, coords, lastTrailUpdate: Date.now(),lastCountry: getCountryFromPoint(latitude, longitude)};
         const country = getCountryFromPoint(latitude, longitude);
         console.log(`Aircraft is in: ${country}`);
+        if (countriesWithAirspaceLimitations.includes(country))
+        {
+            socket.emit('warning', {
+                aircraftname: aircraft,
+                message: { code: 1, countryname: country }
+            });
+            console.log(`Conflict zone`);
+        }
 
         } else {
         // Update existing marker
@@ -109,8 +138,21 @@
         flight.marker.setPopupContent(`<b>${aircraft}</b></br>Speed:<i>${speed}</i> kt </br> Altitude: <i>${altitude}</i> ft`);
         flight.marker.setRotationAngle(heading);
 
-        // Add new position to trail
-
+        // Verify current country
+        const country=getCountryFromPoint(latitude, longitude)
+        if(country!==flight.lastCountry)
+        {
+            flight.lastCountry=getCountryFromPoint(latitude, longitude)
+            console.log(`Aircraft is in: ${country}`);
+            if (countriesWithAirspaceLimitations.includes(country))
+            {
+                socket.emit('warning', {
+                    aircraftname: aircraft,
+                    message: { code: 1, countryname: country }
+                });
+                console.log(`Conflict zone`);
+            }
+        }
         // Limit trail length to last 20 points
 
         const now = Date.now();
@@ -119,6 +161,23 @@
             flight.path.setLatLngs(flight.coords);
             flight.lastTrailUpdate = now;
         }
+
+        if(vvi>500)
+        {    
+            flight.marker.setIcon(iconclimb);
+        }
+        else if(vvi<-500)
+        {
+            flight.marker.setIcon(icondesc);
+        }
+        else if(altitudeGND>10)
+        {
+            flight.marker.setIcon(iconup);
+        }
+        else
+        {
+            flight.marker.setIcon(icon);
+        }
         //if (heading !== undefined) {
         //  flights[aircraft].setRotationAngle(heading);
         //}
@@ -126,19 +185,19 @@
     });
 
         // 3. Define custom icon function
-        function pointToLayer(feature, latlng) {
-            const iconUrl = feature.properties.icon_url || 'http://localhost:8000/plane.png';
+        //function pointToLayer(feature, latlng) {
+        //    const iconUrl = feature.properties.icon_url || 'http://localhost:8000/plane.png';
 
-            const icon = L.icon({
-                iconUrl: iconUrl,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16],
-                popupAnchor: [0, -16]
-            });
+        //    const icon = L.icon({
+        //        iconUrl: iconUrl,
+        //        iconSize: [32, 32],
+        //        iconAnchor: [16, 16],
+        //        popupAnchor: [0, -16]
+        //    });
 
-            return L.marker(latlng, { icon: icon }).bindPopup(`ID: ${feature.properties.id}`);
+        //    return L.marker(latlng, { icon: icon }).bindPopup(`ID: ${feature.properties.id}`);
 
-        }
+        //}
 
         // 4. Load real-time data
 
