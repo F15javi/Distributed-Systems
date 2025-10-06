@@ -10,7 +10,6 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-
 #include "../src/xplaneConnect.h"
 #ifdef WIN32
 #include <Windows.h>
@@ -28,11 +27,10 @@ const char* host = "test.mosquitto.org";
 unsigned int port_mqtt = 1883;
 const char* username = "Javier";
 const char* password = "xX1234Xx";
-const char* cafile = "C:\\Users\\Lenovo\\Documents\\cert\\DigiCertGlobalRootCA.pem";
 
 
 const char* xpIP = "127.0.0.1"; //IP Address of computer running X-Plane
-unsigned short xpPort = 49007;  //default port number XPC listens on
+unsigned short xpPort = 49009;  //default port number XPC listens on
 unsigned short port = 49003;    //port number to which X-Plane is set to send UDP packets
 
 std::string steamUserName;
@@ -61,6 +59,7 @@ int main()
         
         float data[ROWS][COLUMNS]; //data[0] is dataset index number, data[1] to data[9] are the contents of the dataset
         int error = readDATA(sock, data, ROWS);
+        
         if (error != -1) {
             //printf("\nlat = %f, lon = %f, alt = %d, speed = %f", lat, lon, altitude, speed);
 
@@ -81,9 +80,11 @@ int main()
         
 
         closeUDP(sock);
+       
+
+
         
-      
-        
+            
         json jsonPayload;
 
         jsonPayload["aircraft"] = steamUserName;
