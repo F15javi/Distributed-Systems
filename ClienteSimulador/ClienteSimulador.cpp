@@ -37,7 +37,7 @@ std::string steamUserName;
 int speed;
 int vvi;
 int altitude;
-int altitudeGND;
+float altitudeGND;
 float lat;
 float lon;
 float hdg;
@@ -88,7 +88,7 @@ int main()
 
         jsonPayload["aircraft"] = steamUserName;
         jsonPayload["altitude"] = altitude;
-        jsonPayload["altitudeGND"] = altitude;
+        jsonPayload["altitudeGND"] = altitudeGND;
         jsonPayload["heading"] = hdg;
         jsonPayload["latitude"] = lat;
         jsonPayload["longitude"] = lon;
