@@ -65,7 +65,7 @@
         }).addTo(map);
 
         socket.on('mqtt_data', (data) => {
-        const { aircraft, altitude, heading, latitude, longitude, speed, vvi} = data;
+        const { aircraft, altitude, altitudeGND, heading, latitude, longitude, speed, vvi} = data;
         //console.log(data);
         console.log(latitude);
         console.log(longitude);
