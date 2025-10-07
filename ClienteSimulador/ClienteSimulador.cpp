@@ -25,11 +25,9 @@ using namespace WinToastLib;
 #define ROWS 4
 #define COLUMNS 9
 
-int publisher(std::string payload, mosquitto* mosq);
 int readSteamUserName();
-int subscriber(mosquitto* mosq);
-int push_warning();
-void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg);
+int push_warning(std::wstring appName, std::wstring appUserModelID, std::wstring text);
+void event_manager(std::string payload);
 
 const char* host = "test.mosquitto.org";
 const char* topicPub;
@@ -132,7 +130,7 @@ void print_help() {
 void on_connect(struct mosquitto* mosq, void* obj, int rc) {
     if (rc == 0) {
         std::cout << "[MQTT IN] Connected to broker.\n";
-        mosquitto_subscribe(mosq, NULL, topicSub, 0);
+        mosquitto_subscribe(mosq, NULL, topicSub, 1);
     }
     else {
         std::cerr << "[MQTT IN] Connection failed: " << rc << "\n";
@@ -140,36 +138,49 @@ void on_connect(struct mosquitto* mosq, void* obj, int rc) {
 }
 
 void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg) {
-    std::cout << "[MQTT IN] Message received on " << msg->topic << ": "
-        << (char*)msg->payload << "\n";
+    if (msg && msg->payload) {
+        std::string payload((char*)msg->payload, msg->payloadlen);
+
+        event_manager(payload);
+
+    }
 }
 
 void subscriber_thread() {
     mosquitto_lib_init();
 
+    // Ensure steamUserName is set
     std::string topicSubStr = "flights/" + steamUserName + "/warnings";
-    const char* topicSub = topicSubStr.c_str();
+    topicSub = topicSubStr.c_str();
 
-    mosquitto* mosq = mosquitto_new("simpleClient", false, nullptr);
-
+    mosquitto* mosq = mosquitto_new("subscriberClient", true, nullptr);
     if (!mosq) {
-        std::cerr << "[MQTT IN] Failed to create instance.\n";
+        std::cerr << "[MQTT IN] Failed to create client\n";
         return;
     }
 
     mosquitto_connect_callback_set(mosq, on_connect);
     mosquitto_message_callback_set(mosq, on_message);
 
-    while (mosquitto_connect(mosq, host, port_mqtt, 60) != MOSQ_ERR_SUCCESS) {
-        std::cerr << "[MQTT IN] Connection failed.\n";
+
+
+    int rc = mosquitto_connect(mosq, host, port_mqtt, 60);
+    if (rc != MOSQ_ERR_SUCCESS) {
+        std::cerr << "[MQTT IN] Connect failed: " << mosquitto_strerror(rc) << "\n";
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
         return;
     }
-
-    // This will loop forever and receive messages
+    // Start asynchronous network loop
     mosquitto_loop_start(mosq);
 
+    // Keep thread alive
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    mosquitto_loop_stop(mosq, true);
+    mosquitto_disconnect(mosq);
     mosquitto_destroy(mosq);
     mosquitto_lib_cleanup();
 }
@@ -249,9 +260,8 @@ void publisher_thread() {
         }
         
 
-        for (int i = 0; i < 10; i++) {
-            mosquitto_loop(mosqPub, 100, 1);  // run network loop for 100ms
-        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
     }
 
     mosquitto_disconnect(mosqPub);
@@ -277,31 +287,9 @@ int main() {
     std::thread pubThread(publisher_thread);
 
     pubThread.join();
-    //subThread.join();
+    subThread.join();
     
     return 0;
-}
-int publisher(std::string payload, mosquitto* mosq) {
-
-    // Publish one message (QoS 1, wait for delivery)
-    
-    const char* msg = payload.c_str();
-    printf(msg);
-
-    int rc = mosquitto_publish(mosq, nullptr, topicPub, std::strlen(msg), msg, 1, false);
-    if (rc != MOSQ_ERR_SUCCESS) {
-        std::cerr << "Publish failed: " << mosquitto_strerror(rc) << "\n";
-    }
-    else {
-        std::cout << "\nMessage published\n\n";
-    }
-
-    mosquitto_log_callback_set(mosq, [](mosquitto*, void*, int level, const char* str) {
-        std::cout << "\n\n[mosq out] " << str << std::endl;
-        });    
-
-    return 0;
-
 }
 int readSteamUserName() {
     std::ifstream inputFile("C:\\Program Files (x86)\\Steam\\config\\loginusers.vdf"); // Replace with your file name
@@ -324,35 +312,19 @@ int readSteamUserName() {
     inputFile.close(); // Close the file
     return 0;
 }
-int subscriber(mosquitto* mosq) {
 
-    // Subscribe one message (QoS 1, wait for delivery)
-    
+void event_manager(std::string payload) {
 
+    json data = json::parse(payload);
+    int msgType = data["code"];
+    int msgType = data["code"];
 
-    int rc = mosquitto_subscribe(mosq, nullptr, topicSub, 1);
-
-    if (rc != MOSQ_ERR_SUCCESS) {
-        std::cerr << "Failed to subscribe: " << mosquitto_strerror(rc) << "\n";
-    }
-    else {
-        std::cout << "\n[mosq in] Message receive\n\n";
-    }
-
-    mosquitto_log_callback_set(mosq, [](mosquitto*, void*, int level, const char* str) {
-        std::cout << "[mosq in] " << str << std::endl;
-        });
-    
-    //push_warning();
-    return 1;
 
 
 }
-int push_warning() {
+int push_warning(std::wstring appName, std::wstring appUserModelID, std::wstring text) {
 
-    std::wstring appName = L"ATC Alert";
-    std::wstring appUserModelID = L"ATC Alert";
-    std::wstring text = L"";
+    
     std::wstring imagePath = L"";
     std::wstring attribute = L"";
     std::vector<std::wstring> actions;
