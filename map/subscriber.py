@@ -44,7 +44,7 @@ def on_message(client, userdata, msg):
         #print(f"Message from {topic}: {data}")
 
         # Include topic/device info in the message sent to the frontend
-        #print(f"Message from {topic}: {data}")
+        print(f"Message from {topic}: {data}")
 
         socketio.emit('mqtt_data', data)
     except Exception as e:
