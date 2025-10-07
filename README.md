@@ -8,6 +8,7 @@ hello there
 - añadir información OK
 - añadir orientación OK
 - añadir trayecto OK
+- MODIFICAR LO DE DOS HERMANAS
 - Implementar Last Will Topics
 - Detectar otros jugadores cercanos
 - Implementar notificaciones por conexión y desconexión de jugadores
