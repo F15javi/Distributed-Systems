@@ -7,6 +7,8 @@
 #include <cstring>
 #include <fstream>
 #include <string>
+#include <thread>
+
 #include "../ClienteSimulador/header/json.hpp"
 using json = nlohmann::json;
 #include "../src/xplaneConnect.h"
@@ -30,6 +32,8 @@ int push_warning();
 void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg);
 
 const char* host = "test.mosquitto.org";
+const char* topicPub;
+const char* topicSub;
 unsigned int port_mqtt = 1883;
 
 
@@ -125,13 +129,136 @@ void print_help() {
     std::wcout << "\t" << COMMAND_INPUT << L" : add an input to the toast" << std::endl;
     std::wcout << "\t" << COMMAND_HELP << L" : Print the help description" << std::endl;
 }
-void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg) {
-    std::cout << "\nReceived message on topic: " << msg->topic << std::endl;
-    if (msg->payloadlen > 0)
-        std::cout << "Payload: " << (char*)msg->payload << std::endl;
-    else
-        std::cout << "(empty message)" << std::endl;
+void on_connect(struct mosquitto* mosq, void* obj, int rc) {
+    if (rc == 0) {
+        std::cout << "[MQTT IN] Connected to broker.\n";
+        mosquitto_subscribe(mosq, NULL, topicSub, 0);
+    }
+    else {
+        std::cerr << "[MQTT IN] Connection failed: " << rc << "\n";
+    }
 }
+
+void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg) {
+    std::cout << "[MQTT IN] Message received on " << msg->topic << ": "
+        << (char*)msg->payload << "\n";
+}
+
+void subscriber_thread() {
+    mosquitto_lib_init();
+
+    std::string topicSubStr = "flights/" + steamUserName + "/warnings";
+    const char* topicSub = topicSubStr.c_str();
+
+    mosquitto* mosq = mosquitto_new("simpleClient", false, nullptr);
+
+    if (!mosq) {
+        std::cerr << "[MQTT IN] Failed to create instance.\n";
+        return;
+    }
+
+    mosquitto_connect_callback_set(mosq, on_connect);
+    mosquitto_message_callback_set(mosq, on_message);
+
+    while (mosquitto_connect(mosq, host, port_mqtt, 60) != MOSQ_ERR_SUCCESS) {
+        std::cerr << "[MQTT IN] Connection failed.\n";
+        mosquitto_destroy(mosq);
+        mosquitto_lib_cleanup();
+        return;
+    }
+
+    // This will loop forever and receive messages
+    mosquitto_loop_start(mosq);
+
+    mosquitto_destroy(mosq);
+    mosquitto_lib_cleanup();
+}
+
+void publisher_thread() {
+
+    mosquitto_lib_init();
+
+    std::string topicPubStr = "flights/" + steamUserName;
+    const char* topicPub = topicPubStr.c_str();
+
+    mosquitto* mosqPub = mosquitto_new("simpleClient", false, nullptr);
+
+
+    while (true) {
+
+        if (!mosqPub) {
+            std::cerr << "Could not create client\n";
+            return;
+        }
+
+        // TLS
+        if (mosquitto_tls_insecure_set(mosqPub, true) != MOSQ_ERR_SUCCESS) {
+            std::cerr << "Failed to set TLS\n\n";
+            return;
+        }
+
+        // Connect
+        int rc = mosquitto_connect(mosqPub, host, port_mqtt, 60);
+        if (rc != MOSQ_ERR_SUCCESS) {
+            std::cerr << "Connect failed: " << mosquitto_strerror(rc) << "\n";
+            return;
+        }
+
+        // Open Socket
+        XPCSocket sock = aopenUDP(xpIP, xpPort, port); //docs seem to be outdated on these...
+
+        // Read 4 rows of data
+        float data[ROWS][COLUMNS]; //data[0] is dataset index number, data[1] to data[9] are the contents of the dataset
+        int error = readDATA(sock, data, ROWS);
+
+        if (error != -1) {
+            //printf("\nlat = %f, lon = %f, alt = %d, speed = %f", lat, lon, altitude, speed);
+
+            speed = data[0][2];
+            vvi = data[1][3];
+            altitude = (int)data[3][3];
+            altitudeGND = (int)data[3][4];
+            lat = data[3][1];
+            lon = data[3][2];
+            hdg = data[2][3];
+        }
+        else {
+            printf("\nSimulator not running\n");
+        }
+        closeUDP(sock);
+
+        json jsonPayload;
+        jsonPayload["aircraft"] = steamUserName;    
+        jsonPayload["altitude"] = altitude;
+        jsonPayload["altitudeGND"] = altitudeGND;
+        jsonPayload["heading"] = hdg;
+        jsonPayload["latitude"] = lat;
+        jsonPayload["longitude"] = lon;
+        jsonPayload["speed"] = speed;
+        jsonPayload["vvi"] = vvi;
+
+        std::string mqttPayload = jsonPayload.dump();
+        const char* msg = mqttPayload.c_str();
+
+        rc = mosquitto_publish(mosqPub, nullptr, topicPub, std::strlen(msg), msg,0, false);
+
+        if (rc == MOSQ_ERR_SUCCESS){
+            std::cout << "[MQTT OUT] Sent: " << msg << "\n";
+        }else {
+            std::cerr << "[MQTT OUT] Publish failed: " << mosquitto_strerror(rc) << "\n";
+        }
+        
+
+        for (int i = 0; i < 10; i++) {
+            mosquitto_loop(mosqPub, 100, 1);  // run network loop for 100ms
+        }
+    }
+
+    mosquitto_disconnect(mosqPub);
+    mosquitto_destroy(mosqPub);
+    mosquitto_lib_cleanup();
+}
+
 int main() {
     
 
@@ -143,104 +270,25 @@ int main() {
     printf("Read Steam User\n\n");
     readSteamUserName();
 
-    while (1) {
+    std::thread subThread(subscriber_thread);
+    // Give subscriber time to connect before publisher starts
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
-        // Open Socket
-        XPCSocket sock = aopenUDP(xpIP, xpPort, port); //docs seem to be outdated on these...
+    std::thread pubThread(publisher_thread);
 
-        // Read 2 rows of data
-        
-        float data[ROWS][COLUMNS]; //data[0] is dataset index number, data[1] to data[9] are the contents of the dataset
-        int error = readDATA(sock, data, ROWS);
-        
-        if (error != -1) {
-            //printf("\nlat = %f, lon = %f, alt = %d, speed = %f", lat, lon, altitude, speed);
-           
-            speed = data[0][2];
-            vvi = data[1][3];
-            altitude = (int)data[3][3];
-            altitudeGND = (int)data[3][4];
-            lat = data[3][1];
-            lon = data[3][2];
-            hdg = data[2][3];
-        }
-        else {
-            printf("\nSimulator not running");
-        }
-        
-
-        closeUDP(sock);
-       
-
-
-        
-            
-        json jsonPayload;
-
-        jsonPayload["aircraft"] = steamUserName;
-        jsonPayload["altitude"] = altitude;
-        jsonPayload["altitudeGND"] = altitudeGND;
-        jsonPayload["heading"] = hdg;
-        jsonPayload["latitude"] = lat;
-        jsonPayload["longitude"] = lon;
-        jsonPayload["speed"] = speed;
-        jsonPayload["vvi"] = vvi;
-
-        std::string mqttPayload = jsonPayload.dump();
-
-        // Init
-
-        mosquitto* mosq = mosquitto_new("simpleClient", false, nullptr);
-        if (!mosq) {
-            std::cerr << "Could not create client\n";
-            return 1;
-        }
-
-        // TLS
-        if (mosquitto_tls_insecure_set(mosq, true) != MOSQ_ERR_SUCCESS) {
-            std::cerr << "Failed to set TLS\n\n";
-            return 1;
-        }
-
-        // Connect
-        int rc = mosquitto_connect(mosq, host, port_mqtt, 60);
-        if (rc != MOSQ_ERR_SUCCESS) {
-            std::cerr << "Connect failed: " << mosquitto_strerror(rc) << "\n";
-            return 1;
-        }
-        //std::cout << "Connected\n";
-        mosquitto_message_callback_set(mosq, on_message);
-
-        publisher(mqttPayload, mosq);
-        subscriber(mosq);
-
-        // Process network events briefly (needed for QoS>0 to complete handshake)
-        for (int i = 0; i < 10; i++) {
-            mosquitto_loop(mosq, 100, 1);  // run network loop for 100ms
-        }
-        // Disconnect
-        mosquitto_disconnect(mosq);
-        mosquitto_destroy(mosq);
-        mosquitto_lib_cleanup();
-        std::cout << "\nDone\n";
-        Sleep(10); 
-
-    }
+    pubThread.join();
+    //subThread.join();
+    
     return 0;
 }
-
-
-
 int publisher(std::string payload, mosquitto* mosq) {
 
     // Publish one message (QoS 1, wait for delivery)
-    std::string topicStr = "flights/"+steamUserName;
-
-    const char* topic = topicStr.c_str();
+    
     const char* msg = payload.c_str();
     printf(msg);
 
-    int rc = mosquitto_publish(mosq, nullptr, topic, std::strlen(msg), msg, 1, false);
+    int rc = mosquitto_publish(mosq, nullptr, topicPub, std::strlen(msg), msg, 1, false);
     if (rc != MOSQ_ERR_SUCCESS) {
         std::cerr << "Publish failed: " << mosquitto_strerror(rc) << "\n";
     }
@@ -276,15 +324,13 @@ int readSteamUserName() {
     inputFile.close(); // Close the file
     return 0;
 }
-int subscriber(mosquitto* mosq, const struct mosquitto_message* msg) {
+int subscriber(mosquitto* mosq) {
 
     // Subscribe one message (QoS 1, wait for delivery)
-    std::string topicStr = "flights/" + steamUserName + "/warnings";
-
-    const char* topic = topicStr.c_str();
+    
 
 
-    int rc = mosquitto_subscribe(mosq, nullptr, topic, 1);
+    int rc = mosquitto_subscribe(mosq, nullptr, topicSub, 1);
 
     if (rc != MOSQ_ERR_SUCCESS) {
         std::cerr << "Failed to subscribe: " << mosquitto_strerror(rc) << "\n";
