@@ -1,4 +1,0 @@
-﻿ClienteSimulador.obj : error LNK2001: símbolo externo aopenUDP sin resolver
-ClienteSimulador.obj : error LNK2001: símbolo externo closeUDP sin resolver
-ClienteSimulador.obj : error LNK2001: símbolo externo readDATA sin resolver
-C:\Users\Lenovo\Desktop\Master\Proyecto DS\ClienteSimulador\x64\Release\ClienteSimulador.exe : fatal error LNK1120: 3 externos sin resolver

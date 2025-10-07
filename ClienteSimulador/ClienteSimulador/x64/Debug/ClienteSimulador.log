@@ -1,8 +1,0 @@
-﻿  ClienteSimulador.cpp
-C:\Users\Lenovo\Desktop\Master\Proyecto DS\ClienteSimulador\ClienteSimulador.cpp(159,30): warning C4244: '=': conversión de 'float' a 'int'; posible pérdida de datos
-C:\Users\Lenovo\Desktop\Master\Proyecto DS\ClienteSimulador\ClienteSimulador.cpp(162,41): warning C4244: '=': conversión de 'int' a 'float'; posible pérdida de datos
-C:\Users\Lenovo\Desktop\Master\Proyecto DS\ClienteSimulador\ClienteSimulador.cpp(243,65): warning C4267: 'argumento': conversión de 'size_t' a 'int'; posible pérdida de datos
-C:\Users\Lenovo\Desktop\Master\Proyecto DS\ClienteSimulador\ClienteSimulador.cpp(351,1): warning C4715: 'push_warning': no todas las rutas de acceso de control devuelven un valor
-  ClienteSimulador.vcxproj -> C:\Users\Lenovo\Desktop\Master\Proyecto DS\ClienteSimulador\x64\Debug\ClienteSimulador.exe
-  "pwsh.exe" no se reconoce como un comando interno o externo,
-  programa o archivo por lotes ejecutable.
