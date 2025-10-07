@@ -51,6 +51,8 @@
 
         const countriesWithAirspaceLimitations = ["Ukraine","Syria","Yemen","Libya","Somalia","Ethiopia","Armenia","Azerbaijan","Afghanistan","Mali","Iraq","Sudan","South Sudan","Democratic Republic of the Congo","Israel","Palestine","Iran","Iraq"];
 
+        const proximityAlerts = new Set();
+
         function getRandomColor() {
             const colors = ['red', 'blue', 'green', 'orange', 'purple', 'teal', 'magenta', 'gold', 'lime', 'cyan'];
             return colors[Math.floor(Math.random() * colors.length)];
@@ -66,15 +68,6 @@
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        socket.on('mqtt_data', (data) => {
-        const { aircraft, altitude, altitudeGND, heading, latitude, longitude, speed, vvi} = data;
-        //console.log(data);
-        //console.log(latitude);
-        //console.log(longitude);
-        //console.log(speed);
-
-        if (!latitude || !longitude) return;
-        
         const icon = L.icon({
             iconUrl: "http://localhost:8000/plane.png", // or any URL to your plane image
             iconSize: [32, 32],
@@ -98,6 +91,15 @@
             iconSize: [32, 32],
             iconAnchor: [16, 16],
         });
+    
+        socket.on('mqtt_data', (data) => {
+        const { aircraft, altitude, altitudeGND, heading, latitude, longitude, speed, vvi} = data;
+        //console.log(data);
+        //console.log(latitude);
+        //console.log(longitude);
+        //console.log(speed);
+
+        if (!latitude || !longitude) return;
 
         if (!flights[aircraft]) {
         // Create new marker for this flight
@@ -116,11 +118,15 @@
         flights[aircraft] = { marker, path, coords, lastTrailUpdate: Date.now(),lastCountry: getCountryFromPoint(latitude, longitude)};
         const country = getCountryFromPoint(latitude, longitude);
         console.log(`Aircraft is in: ${country}`);
+        socket.emit('warning', {
+            aircraftname: aircraft,
+            message: { code: 0, countryname: country }
+        });
         if (countriesWithAirspaceLimitations.includes(country))
         {
             socket.emit('warning', {
                 aircraftname: aircraft,
-                message: { code: 1, countryname: country }
+                message: { code: 2, countryname: country }
             });
             console.log(`Conflict zone`);
         }
@@ -143,12 +149,16 @@
         if(country!==flight.lastCountry)
         {
             flight.lastCountry=getCountryFromPoint(latitude, longitude)
+            socket.emit('warning', {
+                aircraftname: aircraft,
+                message: { code: 1, countryname: country }
+            });
             console.log(`Aircraft is in: ${country}`);
             if (countriesWithAirspaceLimitations.includes(country))
             {
                 socket.emit('warning', {
                     aircraftname: aircraft,
-                    message: { code: 1, countryname: country }
+                    message: { code: 2, countryname: country }
                 });
                 console.log(`Conflict zone`);
             }
@@ -181,6 +191,40 @@
         //if (heading !== undefined) {
         //  flights[aircraft].setRotationAngle(heading);
         //}
+              // Proximity detection
+        for (const otherAircraft in flights) {
+            if (otherAircraft === aircraft) continue;
+
+            const other = flights[otherAircraft];
+            const [lat1, lon1] = [latitude, longitude];
+            const [lat2, lon2] = [other.marker.getLatLng().lat, other.marker.getLatLng().lng];
+
+            const from = turf.point([lon1, lat1]);
+            const to = turf.point([lon2, lat2]);
+            const distance = turf.distance(from, to, { units: 'kilometers' });
+
+            const pairKey = [aircraft, otherAircraft].sort().join('-');
+
+            if (distance <= 100) {
+                if (!proximityAlerts.has(pairKey)) {
+                    proximityAlerts.add(pairKey);
+                    console.log(`⚠️ ${aircraft} y ${otherAircraft} están a ${distance.toFixed(1)} km`);
+                    socket.emit('warning', {
+                        aircraftname: aircraft,
+                        message: {
+                            code: 3,
+                            distance_km: distance.toFixed(1),
+                            other_aircraft: otherAircraft
+                        }
+                    });
+                }
+            } else {
+                if (proximityAlerts.has(pairKey)) {
+                    proximityAlerts.delete(pairKey);
+                    console.log(`✅ ${aircraft} y ${otherAircraft} ya están fuera de rango (${distance.toFixed(1)} km)`);
+                }
+            }
+        }
       }
     });
 

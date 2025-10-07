@@ -317,7 +317,8 @@ void event_manager(std::string payload) {
 
     json data = json::parse(payload);
     int msgType = data["code"];
-    
+    int msgType = data["code"];
+
 
 
 }
