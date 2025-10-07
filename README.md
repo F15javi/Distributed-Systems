@@ -4,7 +4,14 @@ python -m http.server 8000
 
 hello there
 
-- Héctor: descargar el juego
-- añadir información
-- añadir orientación
-- añadir trayecto
+- Héctor: descargar el juego OK
+- añadir información OK
+- añadir orientación OK
+- añadir trayecto OK
+- MODIFICAR LO DE DOS HERMANAS
+- Implementar Last Will Topics
+- Detectar otros jugadores cercanos.
+- Implementar notificaciones por conexión y desconexión de jugadores, informando del pais.
+- Informar cuando jugadores hayan aterrizado y donde.
+- Informar cuando un jugador cambie de pais.
+
