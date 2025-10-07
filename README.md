@@ -11,5 +11,5 @@ hello there
 - MODIFICAR LO DE DOS HERMANAS
 - Implementar Last Will Topics
 - Detectar otros jugadores cercanos
-- Implementar notificaciones por conexión y desconexión de jugadores
+- Implementar notificaciones por conexión y desconexión de jugadores, informando del pais. 
 
