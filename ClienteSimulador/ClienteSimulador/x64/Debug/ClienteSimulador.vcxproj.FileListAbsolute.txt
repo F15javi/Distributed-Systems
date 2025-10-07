@@ -1,0 +1,6 @@
+C:\Users\Lenovo\Desktop\Master\Proyecto DS\ClienteSimulador\x64\Debug\Microsoft.Toolkit.Uwp.Notifications.winmd
+C:\Users\Lenovo\Desktop\Master\Proyecto DS\ClienteSimulador\x64\Debug\Microsoft.Toolkit.Uwp.Notifications.pdb
+C:\Users\Lenovo\Desktop\Master\Proyecto DS\ClienteSimulador\x64\Debug\Microsoft.Toolkit.Uwp.Notifications.xml
+C:\Users\Lenovo\Desktop\Master\Proyecto DS\ClienteSimulador\x64\Debug\Microsoft.Toolkit.Uwp.Notifications.pri
+C:\Users\Lenovo\Desktop\Master\Proyecto DS\ClienteSimulador\ClienteSimulador\x64\Debug\ClienteSimulador.vcxproj.AssemblyReference.cache
+C:\Users\Lenovo\Desktop\Master\Proyecto DS\ClienteSimulador\ClienteSimulador\x64\Debug\ClienteS.397EAFEA.Up2Date
