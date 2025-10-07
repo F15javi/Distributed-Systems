@@ -14,4 +14,5 @@ hello there
 - Implementar notificaciones por conexión y desconexión de jugadores, informando del pais.
 - Informar cuando jugadores hayan aterrizado y donde.
 - Informar cuando un jugador cambie de pais.
+- POSIBLE: Persistencia para ver los trayectos en la hora anterior a la conexión 
 
