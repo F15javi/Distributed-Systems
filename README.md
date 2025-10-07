@@ -17,9 +17,10 @@ Código eventos:
 - añadir orientación OK
 - añadir trayecto OK
 - MODIFICAR LO DE DOS HERMANAS OK
-- DEJAR LISTO EJECUTABLE
+- DEJAR LISTO EJECUTABLE OK
 - Implementar Last Will Topics
 - Establecer QoS
+- Ver si hacemos algo con persistencia
 - Detectar otros jugadores cercanos. OK
 - Implementar notificaciones por conexión y desconexión de jugadores, informando del pais. OK
 - Informar cuando jugadores hayan aterrizado y donde. OK
