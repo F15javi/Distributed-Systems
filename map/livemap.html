@@ -75,6 +75,12 @@
             iconAnchor: [16, 16],
         });
 
+        const iconconn = L.icon({
+            iconUrl: "http://localhost:8000/planeconn.png", // or any URL to your plane image
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+        });
+
         const iconclimb = L.icon({
             iconUrl: "http://localhost:8000/planeclimb.png", // or any URL to your plane image
             iconSize: [32, 32],
@@ -106,7 +112,7 @@
             // Create new marker for this flight
 
             const marker = L.marker([latitude, longitude], {
-                icon,
+                icon: iconconn,
                 rotationAngle: heading || 0,
                 rotationOrigin: "center center"
             }).addTo(map)
