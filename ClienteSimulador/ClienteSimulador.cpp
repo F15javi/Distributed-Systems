@@ -26,7 +26,7 @@ using namespace WinToastLib;
 #define COLUMNS 9
 
 int readSteamUserName();
-int push_warning(std::wstring appName, std::wstring appUserModelID, std::wstring text);
+int push_warning(std::wstring text);
 void event_manager(std::string payload);
 
 const char* host = "test.mosquitto.org";
@@ -99,34 +99,8 @@ enum Results {
     ToastNotLaunched          // toast could not be launched
 };
 
-#define COMMAND_ACTION     L"--action"
-#define COMMAND_AUMI       L"--aumi"
-#define COMMAND_APPNAME    L"--appname"
-#define COMMAND_APPID      L"--appid"
-#define COMMAND_EXPIREMS   L"--expirems"
-#define COMMAND_TEXT       L"--text"
-#define COMMAND_HELP       L"--help"
-#define COMMAND_IMAGE      L"--image"
-#define COMMAND_SHORTCUT   L"--only-create-shortcut"
-#define COMMAND_AUDIOSTATE L"--audio-state"
-#define COMMAND_ATTRIBUTE  L"--attribute"
-#define COMMAND_INPUT      L"--input"
 
-void print_help() {
-    std::wcout << "WinToast Console Example [OPTIONS]" << std::endl;
-    std::wcout << "\t" << COMMAND_ACTION << L" : Set the actions in buttons" << std::endl;
-    std::wcout << "\t" << COMMAND_AUMI << L" : Set the App User Model Id" << std::endl;
-    std::wcout << "\t" << COMMAND_APPNAME << L" : Set the default appname" << std::endl;
-    std::wcout << "\t" << COMMAND_APPID << L" : Set the App Id" << std::endl;
-    std::wcout << "\t" << COMMAND_EXPIREMS << L" : Set the default expiration time" << std::endl;
-    std::wcout << "\t" << COMMAND_TEXT << L" : Set the text for the notifications" << std::endl;
-    std::wcout << "\t" << COMMAND_IMAGE << L" : set the image path" << std::endl;
-    std::wcout << "\t" << COMMAND_ATTRIBUTE << L" : set the attribute for the notification" << std::endl;
-    std::wcout << "\t" << COMMAND_SHORTCUT << L" : create the shortcut for the app" << std::endl;
-    std::wcout << "\t" << COMMAND_AUDIOSTATE << L" : set the audio state: Default = 0, Silent = 1, Loop = 2" << std::endl;
-    std::wcout << "\t" << COMMAND_INPUT << L" : add an input to the toast" << std::endl;
-    std::wcout << "\t" << COMMAND_HELP << L" : Print the help description" << std::endl;
-}
+
 void on_connect(struct mosquitto* mosq, void* obj, int rc) {
     if (rc == 0) {
         std::cout << "[MQTT IN] Connected to broker.\n";
@@ -138,12 +112,12 @@ void on_connect(struct mosquitto* mosq, void* obj, int rc) {
 }
 
 void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg) {
-    if (msg && msg->payload) {
-        std::string payload((char*)msg->payload, msg->payloadlen);
+    
+std::string payload((char*)msg->payload, msg->payloadlen);
 
-        event_manager(payload);
+event_manager(payload);
 
-    }
+    
 }
 
 void subscriber_thread() {
@@ -316,15 +290,51 @@ int readSteamUserName() {
 void event_manager(std::string payload) {
 
     json data = json::parse(payload);
-    int msgType = data["code"];
-    int msgType = data["code"];
+    int code = data["code"];
+
+    std::string countryname;
+    std::wstring wcountryname(countryname.begin(), countryname.end());
+    int distance_km;
+
+    std::string other_aircraft;
+    std::wstring wother_aircraft(other_aircraft.begin(), other_aircraft.end());
+
+    std::wstring wText;
+
+    switch (code) {
+    case 0:
+        countryname = data["countryname"];
+       
+        wText = L"You spawn on"+ wcountryname;
+        push_warning(wText);
+
+        break;
+
+    case 1:
+
+        countryname = data["countryname"];
+        break;
+
+    case 2:
+
+        countryname = data["countryname"];
+        break;
+
+    case 3:
+
+        distance_km = data["distance_km"];
+        other_aircraft = data["other_aircraft"];
+        break;
+  
+    }
 
 
 
 }
-int push_warning(std::wstring appName, std::wstring appUserModelID, std::wstring text) {
+int push_warning(std::wstring text) {
 
-    
+    std::wstring appName = L"ATC ALERT";
+    std::wstring appUserModelID = L"ATC ALERT";
     std::wstring imagePath = L"";
     std::wstring attribute = L"";
     std::vector<std::wstring> actions;
