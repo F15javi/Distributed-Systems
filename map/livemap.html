@@ -52,6 +52,7 @@
         const countriesWithAirspaceLimitations = ["Ukraine","Syria","Yemen","Libya","Somalia","Ethiopia","Armenia","Azerbaijan","Afghanistan","Mali","Iraq","Sudan","South Sudan","Democratic Republic of the Congo","Israel","Palestine","Iran","Iraq"];
 
         const proximityAlerts = new Set();
+        const groundedAircraft = new Set();
 
         function getRandomColor() {
             const colors = ['red', 'blue', 'green', 'orange', 'purple', 'teal', 'magenta', 'gold', 'lime', 'cyan'];
@@ -70,6 +71,12 @@
 
         const icon = L.icon({
             iconUrl: "http://localhost:8000/plane.png", // or any URL to your plane image
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+        });
+
+        const iconconn = L.icon({
+            iconUrl: "http://localhost:8000/planeconn.png", // or any URL to your plane image
             iconSize: [32, 32],
             iconAnchor: [16, 16],
         });
@@ -93,139 +100,167 @@
         });
     
         socket.on('mqtt_data', (data) => {
-        const { aircraft, altitude, altitudeGND, heading, latitude, longitude, speed, vvi} = data;
-        //console.log(data);
-        //console.log(latitude);
-        //console.log(longitude);
-        //console.log(speed);
+            const { aircraft, altitude, altitudeGND, heading, latitude, longitude, speed, vvi} = data;
+            //console.log(data);
+            //console.log(latitude);
+            //console.log(longitude);
+            //console.log(speed);
 
-        if (!latitude || !longitude) return;
+            if (!latitude || !longitude) return;
 
-        if (!flights[aircraft]) {
-        // Create new marker for this flight
+            if (!flights[aircraft]) {
+            // Create new marker for this flight
 
-        const marker = L.marker([latitude, longitude], {
-            icon,
-            rotationAngle: heading || 0,
-            rotationOrigin: "center center"
-        }).addTo(map)
-          .bindPopup(`<b>${aircraft}</b></br>Speed:<i>${speed}</i> kt </br> Altitude: <i>${altitude}</i> ft`);
+            const marker = L.marker([latitude, longitude], {
+                icon: iconconn,
+                rotationAngle: heading || 0,
+                rotationOrigin: "center center"
+            }).addTo(map)
+            .bindPopup(`<b>${aircraft}</b></br>Speed:<i>${speed}</i> kt </br> Altitude: <i>${altitude}</i> ft`);
 
-        //flights[aircraft] = marker;
-        const coords = [[latitude, longitude]];
-        const trailColor = getRandomColor();
-        const path = L.polyline(coords, { color: trailColor, weight: 2 }).addTo(map);
-        flights[aircraft] = { marker, path, coords, lastTrailUpdate: Date.now(),lastCountry: getCountryFromPoint(latitude, longitude)};
-        const country = getCountryFromPoint(latitude, longitude);
-        console.log(`Aircraft is in: ${country}`);
-        socket.emit('warning', {
-            aircraftname: aircraft,
-            message: { code: 0, countryname: country }
-        });
-        if (countriesWithAirspaceLimitations.includes(country))
-        {
-            socket.emit('warning', {
-                aircraftname: aircraft,
-                message: { code: 2, countryname: country }
-            });
-            console.log(`Conflict zone`);
-        }
-
-        } else {
-        // Update existing marker
-
-        //flights[aircraft].setLatLng([latitude, longitude]);
-        //flights[aircraft].setPopupContent(`<b>${aircraft}</b></br>Speed:<i>${speed}</i> kt </br> Altitude: <i>${altitude}</i> ft`);
-        //flights[aircraft].setRotationAngle(heading);
-
-        const flight = flights[aircraft];
-
-        flight.marker.setLatLng([latitude, longitude]);
-        flight.marker.setPopupContent(`<b>${aircraft}</b></br>Speed:<i>${speed}</i> kt </br> Altitude: <i>${altitude}</i> ft`);
-        flight.marker.setRotationAngle(heading);
-
-        // Verify current country
-        const country=getCountryFromPoint(latitude, longitude)
-        if(country!==flight.lastCountry)
-        {
-            flight.lastCountry=getCountryFromPoint(latitude, longitude)
-            socket.emit('warning', {
-                aircraftname: aircraft,
-                message: { code: 1, countryname: country }
-            });
+            //flights[aircraft] = marker;
+            const coords = [[latitude, longitude]];
+            const trailColor = getRandomColor();
+            const path = L.polyline(coords, { color: trailColor, weight: 2 }).addTo(map);
+            flights[aircraft] = { marker, path, coords, lastTrailUpdate: Date.now(),lastCountry: getCountryFromPoint(latitude, longitude)};
+            const country = getCountryFromPoint(latitude, longitude);
             console.log(`Aircraft is in: ${country}`);
+            socket.emit('warning', {
+                aircraftname: aircraft,
+                message: { code: 0, username: aircraft, countryname: country }
+            });
             if (countriesWithAirspaceLimitations.includes(country))
             {
                 socket.emit('warning', {
                     aircraftname: aircraft,
-                    message: { code: 2, countryname: country }
+                    message: { code: 2, username: aircraft, countryname: country }
                 });
                 console.log(`Conflict zone`);
             }
-        }
-        // Limit trail length to last 20 points
 
-        const now = Date.now();
-        if (!flight.lastTrailUpdate || now - flight.lastTrailUpdate >= 1000) {
-            flight.coords.push([latitude, longitude]);
-            flight.path.setLatLngs(flight.coords);
-            flight.lastTrailUpdate = now;
-        }
+            } else {
+            // Update existing marker
 
-        if(vvi>500)
-        {    
-            flight.marker.setIcon(iconclimb);
-        }
-        else if(vvi<-500)
-        {
-            flight.marker.setIcon(icondesc);
-        }
-        else if(altitudeGND>10)
-        {
-            flight.marker.setIcon(iconup);
-        }
-        else
-        {
-            flight.marker.setIcon(icon);
-        }
-        //if (heading !== undefined) {
-        //  flights[aircraft].setRotationAngle(heading);
-        //}
-              // Proximity detection
-        for (const otherAircraft in flights) {
-            if (otherAircraft === aircraft) continue;
+            //flights[aircraft].setLatLng([latitude, longitude]);
+            //flights[aircraft].setPopupContent(`<b>${aircraft}</b></br>Speed:<i>${speed}</i> kt </br> Altitude: <i>${altitude}</i> ft`);
+            //flights[aircraft].setRotationAngle(heading);
 
-            const other = flights[otherAircraft];
-            const [lat1, lon1] = [latitude, longitude];
-            const [lat2, lon2] = [other.marker.getLatLng().lat, other.marker.getLatLng().lng];
+            const flight = flights[aircraft];
 
-            const from = turf.point([lon1, lat1]);
-            const to = turf.point([lon2, lat2]);
-            const distance = turf.distance(from, to, { units: 'kilometers' });
+            flight.marker.setLatLng([latitude, longitude]);
+            flight.marker.setPopupContent(`<b>${aircraft}</b></br>Speed:<i>${speed}</i> kt </br> Altitude: <i>${altitude}</i> ft`);
+            flight.marker.setRotationAngle(heading);
 
-            const pairKey = [aircraft, otherAircraft].sort().join('-');
-
-            if (distance <= 100) {
-                if (!proximityAlerts.has(pairKey)) {
-                    proximityAlerts.add(pairKey);
-                    console.log(`⚠️ ${aircraft} y ${otherAircraft} están a ${distance.toFixed(1)} km`);
+            // Verify current country
+            const country=getCountryFromPoint(latitude, longitude)
+            if(country!==flight.lastCountry)
+            {
+                flight.lastCountry=getCountryFromPoint(latitude, longitude)
+                socket.emit('warning', {
+                    aircraftname: aircraft,
+                    message: { code: 1, username: aircraft, countryname: country }
+                });
+                console.log(`Aircraft is in: ${country}`);
+                if (countriesWithAirspaceLimitations.includes(country))
+                {
                     socket.emit('warning', {
                         aircraftname: aircraft,
-                        message: {
-                            code: 3,
-                            distance_km: distance.toFixed(1),
-                            other_aircraft: otherAircraft
-                        }
+                        message: { code: 2, username: aircraft, countryname: country }
                     });
+                    console.log(`Conflict zone`);
                 }
-            } else {
-                if (proximityAlerts.has(pairKey)) {
-                    proximityAlerts.delete(pairKey);
-                    console.log(`✅ ${aircraft} y ${otherAircraft} ya están fuera de rango (${distance.toFixed(1)} km)`);
+            }
+            // Limit trail length to last 20 points
+
+            const now = Date.now();
+            if (!flight.lastTrailUpdate || now - flight.lastTrailUpdate >= 1000) {
+                flight.coords.push([latitude, longitude]);
+                flight.path.setLatLngs(flight.coords);
+                flight.lastTrailUpdate = now;
+            }
+
+            if(vvi>500)
+            {    
+                flight.marker.setIcon(iconclimb);
+            }
+            else if(vvi<-500)
+            {
+                flight.marker.setIcon(icondesc);
+            }
+            else if(altitudeGND>10)
+            {
+                flight.marker.setIcon(iconup);
+            }
+            else
+            {
+                flight.marker.setIcon(icon);
+            }
+            //if (heading !== undefined) {
+            //  flights[aircraft].setRotationAngle(heading);
+            //}
+                // Proximity detection
+            for (const otherAircraft in flights) {
+                if (otherAircraft === aircraft) continue;
+
+                const other = flights[otherAircraft];
+                const [lat1, lon1] = [latitude, longitude];
+                const [lat2, lon2] = [other.marker.getLatLng().lat, other.marker.getLatLng().lng];
+
+                const from = turf.point([lon1, lat1]);
+                const to = turf.point([lon2, lat2]);
+                const distance = turf.distance(from, to, { units: 'kilometers' });
+
+                const pairKey = [aircraft, otherAircraft].sort().join('-');
+
+                if (distance <= 100) {
+                    if (!proximityAlerts.has(pairKey)) {
+                        proximityAlerts.add(pairKey);
+                        console.log(`⚠️ ${aircraft} y ${otherAircraft} están a ${distance.toFixed(1)} km`);
+                        socket.emit('warning', {
+                            aircraftname: aircraft,
+                            message: {
+                                code: 3,
+                                username: aircraft,
+                                distance_km: distance.toFixed(1),
+                                other_aircraft: otherAircraft
+                            }
+                        });
+                    }
+                } else {
+                    if (proximityAlerts.has(pairKey)) {
+                        proximityAlerts.delete(pairKey);
+                        console.log(`✅ ${aircraft} y ${otherAircraft} ya están fuera de rango (${distance.toFixed(1)} km)`);
+                    }
                 }
             }
         }
-      }
+        if (altitudeGND <= 10 && speed < 40) {
+            if (!groundedAircraft.has(aircraft)) {
+                groundedAircraft.add(aircraft);
+                console.log(`🛬 ${aircraft} ha aterrizado o está en tierra.`);
+                socket.emit('warning', {
+                    aircraftname: aircraft,
+                    message: {
+                        code: 4,
+                        username: aircraft,
+                        countryname: getCountryFromPoint(latitude, longitude)
+                    }
+                });
+            }
+        } else {
+            if (groundedAircraft.has(aircraft)) {
+                groundedAircraft.delete(aircraft);
+                console.log(`✈️ ${aircraft} ha despegado o no está en tierra.`);
+                socket.emit('warning', {
+                    aircraftname: aircraft,
+                    message: {
+                        code: 5,
+                        username: aircraft,
+                        countryname: getCountryFromPoint(latitude, longitude)
+                    }
+                });
+            }
+        }
     });
 
         // 3. Define custom icon function

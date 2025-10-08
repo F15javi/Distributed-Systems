@@ -10,7 +10,7 @@ MQTT_BROKER = "test.mosquitto.org"
 MQTT_PARENT_TOPIC = "flights/#"  # <-- wildcard for all subtopics
 
 def publish_message(topic, payload):
-    mqtt_client.publish(topic, json.dumps(payload))
+    mqtt_client.publish(topic, json.dumps(payload),1)
 
 @socketio.on('warning')
 def handle_socket_mqtt(data):
