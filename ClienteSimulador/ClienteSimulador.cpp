@@ -310,7 +310,7 @@ void event_manager(std::string payload) {
         std::wstring wUsername(username.begin(), username.end());
         std::wstring wCountryname(countryname.begin(), countryname.end());
 
-        push_warning(wUsername + L" has enter " + wCountryname);
+        push_warning(wUsername + L" has entered " + wCountryname);
     }
     else if (code == 2) {
         std::string username = data["username"];
@@ -319,7 +319,7 @@ void event_manager(std::string payload) {
         std::wstring wUsername(username.begin(), username.end());
         std::wstring wCountryname(countryname.begin(), countryname.end());
 
-        push_warning(wUsername + L" has entered in a conflict zone on " + wCountryname);
+        push_warning(wUsername + L" has entered inside a conflict zone in " + wCountryname);
     }
     else if (code == 3) {
         std::string username = data["username"];

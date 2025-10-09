@@ -127,13 +127,13 @@
             console.log(`Aircraft is in: ${country}`);
             socket.emit('warning', {
                 aircraftname: aircraft,
-                message: { code: 0, msg:"User "+ aircraft+" has connected in "+country+" ." }
+                message: { code: 0, username: aircraft, countryname: country }
             });
             if (countriesWithAirspaceLimitations.includes(country))
             {
                 socket.emit('warning', {
                     aircraftname: aircraft,
-                    message: { code: 2, msg:"User "+ aircraft+" has entered a conflic zone in "+country+" ."}
+                    message: { code: 2, username: aircraft, countryname: country }
                 });
                 console.log(`Conflict zone`);
             }
@@ -158,14 +158,14 @@
                 flight.lastCountry=getCountryFromPoint(latitude, longitude)
                 socket.emit('warning', {
                     aircraftname: aircraft,
-                    message: { code: 1, msg:"User "+ aircraft+" has entered "+country+" ." }
+                    message: { code: 1, username: aircraft, countryname: country }
                 });
                 console.log(`Aircraft is in: ${country}`);
                 if (countriesWithAirspaceLimitations.includes(country))
                 {
                     socket.emit('warning', {
                         aircraftname: aircraft,
-                        message: { code: 2, msg:"User "+ aircraft+" has entered a conflic zone in "+country+" ."}
+                        message: { code: 2, username: aircraft, countryname: country }
                     });
                     console.log(`Conflict zone`);
                 }
@@ -219,8 +219,9 @@
                             aircraftname: aircraft,
                             message: {
                                 code: 3,
-                                msg:"The user " + aircraft + " is " + distance.toFixed(1) + " kilometers away from user " + otherAircraft + " ."
-                            }
+                                username: aircraft,
+                                distance_km: distance.toFixed(1),
+                                other_aircraft: otherAircraft }
                         });
                     }
                 } else {
@@ -237,10 +238,7 @@
                 console.log(`🛬 ${aircraft} ha aterrizado o está en tierra.`);
                 socket.emit('warning', {
                     aircraftname: aircraft,
-                    message: {
-                        code: 4,
-                        msg: "The user "+aircraft+" has landed or si on the ground in "+getCountryFromPoint(latitude, longitude)+" ."
-                    }
+                    message: { code: 4, username: aircraft, countryname: getCountryFromPoint(latitude, longitude) }
                 });
             }
         } else {
@@ -249,10 +247,8 @@
                 console.log(`✈️ ${aircraft} ha despegado o no está en tierra.`);
                 socket.emit('warning', {
                     aircraftname: aircraft,
-                    message: {
-                        code: 5,
-                        msg: "The user "+aircraft+" has taken off or is currently flying in "+getCountryFromPoint(latitude, longitude)+" ."
-                    }
+                    message: { code: 5, username: aircraft, countryname: getCountryFromPoint(latitude, longitude) }
+
                 });
             }
         }
