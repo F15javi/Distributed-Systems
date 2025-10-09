@@ -292,44 +292,67 @@ void event_manager(std::string payload) {
     json data = json::parse(payload);
     int code = data["code"];
 
-    std::string countryname;
-    std::wstring wcountryname(countryname.begin(), countryname.end());
-    int distance_km;
-
-    std::string other_aircraft;
-    std::wstring wother_aircraft(other_aircraft.begin(), other_aircraft.end());
-
-    std::wstring wText;
-
-    switch (code) {
-    case 0:
-        countryname = data["countryname"];
-       
-        wText = L"You spawn on"+ wcountryname;
-        push_warning(wText);
-
-        break;
-
-    case 1:
-
-        countryname = data["countryname"];
-        break;
-
-    case 2:
-
-        countryname = data["countryname"];
-        break;
-
-    case 3:
-
-        distance_km = data["distance_km"];
-        other_aircraft = data["other_aircraft"];
-        break;
   
+    if (code == 0) {
+
+        std::string username = data["username"];
+        std::string countryname = data["countryname"];
+
+        std::wstring wUsername(username.begin(), username.end());
+        std::wstring wCountryname(countryname.begin(), countryname.end());
+
+        push_warning(wUsername+L" is in "+ wCountryname);
     }
+    else if (code == 1) {
+        std::string username = data["username"];
+        std::string countryname = data["countryname"];
+
+        std::wstring wUsername(username.begin(), username.end());
+        std::wstring wCountryname(countryname.begin(), countryname.end());
+
+        push_warning(wUsername + L" has enter " + wCountryname);
+    }
+    else if (code == 2) {
+        std::string username = data["username"];
+        std::string countryname = data["countryname"];
+
+        std::wstring wUsername(username.begin(), username.end());
+        std::wstring wCountryname(countryname.begin(), countryname.end());
+
+        push_warning(wUsername + L" has entered in a conflict zone on " + wCountryname);
+    }
+    else if (code == 3) {
+        std::string username = data["username"];
+        std::string distance = data["distance_km"];
+        std::string username2 = data["other_aircraft"];
+
+        std::wstring wUsername(username.begin(), username.end());
+        std::wstring wUsername2(username2.begin(), username2.end());
+        std::wstring wistance(distance.begin(), distance.end());
+        std::wstring wDistance(distance.begin(), distance.end());
+
+        push_warning(wUsername + L" and " + wUsername2 + L" are " + wDistance +L" km away");
 
 
+    }
+    else if (code == 4) {
+        std::string username = data["username"];
+        std::string countryname = data["countryname"];
 
+        std::wstring wUsername(username.begin(), username.end());
+        std::wstring wCountryname(countryname.begin(), countryname.end());
+
+        push_warning(wUsername + L" has landed on " + wCountryname);
+    }
+    else if (code == 5) {
+        std::string username = data["username"];
+        std::string countryname = data["countryname"];
+
+        std::wstring wUsername(username.begin(), username.end());
+        std::wstring wCountryname(countryname.begin(), countryname.end());
+
+        push_warning(wUsername + L" has taken off from " + wCountryname);
+    }
 }
 int push_warning(std::wstring text) {
 
