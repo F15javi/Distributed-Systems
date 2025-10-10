@@ -241,7 +241,7 @@
                     message: { code: 4, username: aircraft, countryname: getCountryFromPoint(latitude, longitude) }
                 });
             }
-        } else {
+        } else if (altitudeGND > 100 && speed > 70) {
             if (groundedAircraft.has(aircraft)) {
                 groundedAircraft.delete(aircraft);
                 console.log(`✈️ ${aircraft} ha despegado o no está en tierra.`);
